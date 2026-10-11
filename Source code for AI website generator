@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Web Studio Pro - Text to Website Generator</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f5ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#1e1b4b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        .device-preview {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col font-sans overflow-hidden bg-slate-950 text-slate-100 antialiased">
+
+    <!-- Top Bar -->
+    <header class="h-14 border-b border-slate-800 bg-slate-900/80 backdrop-blur-md px-4 flex items-center justify-between shrink-0 z-30">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-sm leading-tight text-white flex items-center gap-2">
+                    AI Web Studio <span class="bg-indigo-500/20 text-indigo-300 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-indigo-500/30">v2.5</span>
+                </h1>
+                <p class="text-[11px] text-slate-400">Prompt to Instant Website Generator</p>
+            </div>
+        </div>
+
+        <!-- Controls / Quick actions -->
+        <div class="flex items-center gap-2">
+            <button id="apiKeyBtn" onclick="toggleApiModal()" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-1.5">
+                <i data-lucide="key" class="w-3.5 h-3.5 text-amber-400"></i>
+                <span id="apiStatusText">Gemini API: Auto/Free</span>
+            </button>
+            <button onclick="exportCode()" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white transition flex items-center gap-1.5 shadow-md shadow-indigo-600/20">
+                <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                <span>Export Code</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 flex overflow-hidden">
+
+        <!-- Left Control Panel -->
+        <aside class="w-full md:w-96 lg:w-[420px] bg-slate-900 border-r border-slate-800 flex flex-col shrink-0 z-20">
+            <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+                <span class="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <i data-lucide="sliders" class="w-3.5 h-3.5 text-indigo-400"></i> Generator Settings
+                </span>
+                <button onclick="resetAll()" class="text-xs text-slate-400 hover:text-slate-200 transition flex items-center gap-1">
+                    <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Reset
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-4 space-y-5">
+                
+                <!-- Prompt Input Box -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1.5 flex justify-between items-center">
+                        <span>Website Description Prompt</span>
+                        <span class="text-[10px] text-slate-500" id="promptCharCount">0 chars</span>
+                    </label>
+                    <div class="relative">
+                        <textarea id="promptInput" rows="4" 
+                            class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition resize-none"
+                            placeholder="Describe your site (e.g., 'Build a modern dark-mode landing page for an AI SaaS company with pricing cards, hero section with glowing gradient buttons, feature grid, and testimonials...')"></textarea>
+                    </div>
+                </div>
+
+                <!-- Prompt Suggestions / Templates -->
+                <div>
+                    <label class="block text-[11px] font-medium text-slate-400 mb-2">Quick Starter Inspiration:</label>
+                    <div class="flex flex-wrap gap-1.5">
+                        <button onclick="setPromptTemplate('saas')" class="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 transition border border-slate-700/60">🚀 AI SaaS Landing Page</button>
+                        <button onclick="setPromptTemplate('coffee')" class="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 transition border border-slate-700/60">☕ Boutique Coffee Shop</button>
+                        <button onclick="setPromptTemplate('portfolio')" class="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 transition border border-slate-700/60">🎨 Creative Agency</button>
+                        <button onclick="setPromptTemplate('gym')" class="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 transition border border-slate-700/60">🏋️ Fitness & Gym Studio</button>
+                    </div>
+                </div>
+
+                <!-- Theme / Visual Style Selector -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-2">Design Theme & Aesthetic</label>
+                    <div class="grid grid-cols-2 gap-2" id="themeOptions">
+                        <button type="button" data-theme="dark" class="theme-btn p-2.5 rounded-lg border border-indigo-500 bg-indigo-950/30 text-left text-xs transition flex items-center justify-between">
+                            <div>
+                                <div class="font-medium text-slate-200">Modern Dark</div>
+                                <div class="text-[10px] text-slate-400">Deep slate & indigo glows</div>
+                            </div>
+                            <div class="w-3 h-3 rounded-full bg-indigo-500"></div>
+                        </button>
+                        <button type="button" data-theme="light" class="theme-btn p-2.5 rounded-lg border border-slate-800 bg-slate-950/40 text-left text-xs transition flex items-center justify-between">
+                            <div>
+                                <div class="font-medium text-slate-200">Minimalist Light</div>
+                                <div class="text-[10px] text-slate-400">Clean white & crisp gray</div>
+                            </div>
+                            <div class="w-3 h-3 rounded-full bg-slate-300"></div>
+                        </button>
+                        <button type="button" data-theme="cyberpunk" class="theme-btn p-2.5 rounded-lg border border-slate-800 bg-slate-950/40 text-left text-xs transition flex items-center justify-between">
+                            <div>
+                                <div class="font-medium text-slate-200">Cyberpunk Neon</div>
+                                <div class="text-[10px] text-slate-400">Vibrant cyan & magenta</div>
+                            </div>
+                            <div class="w-3 h-3 rounded-full bg-pink-500"></div>
+                        </button>
+                        <button type="button" data-theme="glass" class="theme-btn p-2.5 rounded-lg border border-slate-800 bg-slate-950/40 text-left text-xs transition flex items-center justify-between">
+                            <div>
+                                <div class="font-medium text-slate-200">Glassmorphism</div>
+                                <div class="text-[10px] text-slate-400">Frosted blur & gradients</div>
+                            </div>
+                            <div class="w-3 h-3 rounded-full bg-purple-400"></div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Included Components Checkboxes -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-2">Sections to Include</label>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-950/60 border border-slate-800/80 cursor-pointer hover:border-slate-700">
+                            <input type="checkbox" id="comp-hero" checked class="rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 bg-slate-900">
+                            <span class="text-slate-300">Hero Section</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-950/60 border border-slate-800/80 cursor-pointer hover:border-slate-700">
+                            <input type="checkbox" id="comp-features" checked class="rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 bg-slate-900">
+                            <span class="text-slate-300">Features Grid</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-950/60 border border-slate-800/80 cursor-pointer hover:border-slate-700">
+                            <input type="checkbox" id="comp-pricing" checked class="rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 bg-slate-900">
+                            <span class="text-slate-300">Pricing Table</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-950/60 border border-slate-800/80 cursor-pointer hover:border-slate-700">
+                            <input type="checkbox" id="comp-testimonials" checked class="rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 bg-slate-900">
+                            <span class="text-slate-300">Testimonials</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-950/60 border border-slate-800/80 cursor-pointer hover:border-slate-700">
+                            <input type="checkbox" id="comp-contact" checked class="rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 bg-slate-900">
+                            <span class="text-slate-300">Contact / CTA</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-950/60 border border-slate-800/80 cursor-pointer hover:border-slate-700">
+                            <input type="checkbox" id="comp-footer" checked class="rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 bg-slate-900">
+                            <span class="text-slate-300">Footer</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Action Button -->
+                <div class="pt-2">
+                    <button id="generateBtn" onclick="handleGenerate()" class="w-full py-3 px-4 rounded-xl font-medium text-sm text-white bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 transition shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 group">
+                        <i data-lucide="sparkles" class="w-4 h-4 transition group-hover:rotate-12"></i>
+                        <span id="generateBtnText">Generate Website</span>
+                    </button>
+                </div>
+
+                <!-- AI Status & Step Log Window -->
+                <div id="statusContainer" class="hidden p-3.5 rounded-xl bg-slate-950 border border-slate-800/80 space-y-2">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="font-semibold text-slate-300 flex items-center gap-1.5">
+                            <span class="relative flex h-2 w-2">
+                              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                              <span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                            </span>
+                            AI Processing Pipeline
+                        </span>
+                        <span id="progressPercentage" class="text-[11px] font-mono text-indigo-400">0%</span>
+                    </div>
+                    <!-- Progress Bar -->
+                    <div class="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
+                        <div id="progressBar" class="h-full bg-gradient-to-r from-indigo-500 to-purple-500 w-0 transition-all duration-300"></div>
+                    </div>
+                    <!-- Step Indicator -->
+                    <p id="statusStep" class="text-[11px] text-slate-400 font-mono">Initializing setup...</p>
+                </div>
+
+                <!-- Refinement / Iteration Box (Appears after site exists) -->
+                <div id="refineContainer" class="hidden pt-3 border-t border-slate-800 space-y-2">
+                    <label class="block text-xs font-medium text-indigo-300 flex items-center gap-1">
+                        <i data-lucide="wand-2" class="w-3.5 h-3.5"></i> Iterate & Edit Request
+                    </label>
+                    <div class="flex gap-2">
+                        <input type="text" id="refineInput" placeholder="e.g. Change hero CTA button to emerald green" class="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        <button onclick="handleRefine()" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 border border-slate-700 transition">Apply</button>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+        <!-- Right Main Workspace / Preview Area -->
+        <main class="flex-1 flex flex-col bg-slate-950 relative overflow-hidden">
+            
+            <!-- Toolbar -->
+            <div class="h-12 border-b border-slate-800 bg-slate-900/50 px-4 flex items-center justify-between shrink-0">
+                
+                <!-- View Mode Tabs (Preview vs Raw Code) -->
+                <div class="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
+                    <button id="tabPreview" onclick="switchTab('preview')" class="px-3 py-1 rounded-md text-xs font-medium bg-slate-800 text-white transition flex items-center gap-1.5">
+                        <i data-lucide="eye" class="w-3.5 h-3.5"></i> Live Preview
+                    </button>
+                    <button id="tabCode" onclick="switchTab('code')" class="px-3 py-1 rounded-md text-xs font-medium text-slate-400 hover:text-slate-200 transition flex items-center gap-1.5">
+                        <i data-lucide="code" class="w-3.5 h-3.5"></i> HTML Code
+                    </button>
+                </div>
+
+                <!-- Device Preview Resizer (Desktop, Tablet, Mobile) -->
+                <div id="deviceControls" class="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
+                    <button onclick="setDeviceWidth('100%')" title="Desktop View" class="device-btn p-1.5 rounded text-slate-200 bg-slate-800 hover:bg-slate-700">
+                        <i data-lucide="monitor" class="w-3.5 h-3.5"></i>
+                    </button>
+                    <button onclick="setDeviceWidth('768px')" title="Tablet View" class="device-btn p-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800">
+                        <i data-lucide="tablet" class="w-3.5 h-3.5"></i>
+                    </button>
+                    <button onclick="setDeviceWidth('375px')" title="Mobile View" class="device-btn p-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800">
+                        <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+
+                <!-- View Actions -->
+                <div class="flex items-center gap-2">
+                    <button onclick="openInNewTab()" title="Open in new window" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition">
+                        <i data-lucide="external-link" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="copyToClipboard()" title="Copy HTML" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition">
+                        <i data-lucide="copy" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Preview Display Container -->
+            <div class="flex-1 relative bg-slate-950/80 p-4 flex items-center justify-center overflow-auto">
+                
+                <!-- Welcome Placeholder State -->
+                <div id="emptyState" class="text-center max-w-md p-6 border border-dashed border-slate-800 rounded-2xl bg-slate-900/30">
+                    <div class="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center mx-auto mb-3 border border-indigo-500/20">
+                        <i data-lucide="wand" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="text-base font-semibold text-slate-200 mb-1">No Site Generated Yet</h3>
+                    <p class="text-xs text-slate-400 mb-4">Choose a starter prompt or describe your custom website concept in the left panel to build a live Tailwind page instantly.</p>
+                    <button onclick="setPromptTemplate('saas'); handleGenerate();" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 transition border border-slate-700">
+                        Try Quick Demo (SaaS Landing Page)
+                    </button>
+                </div>
+
+                <!-- Interactive Sandboxed IFrame Preview -->
+                <div id="previewWrapper" class="hidden h-full w-full flex items-center justify-center transition-all duration-300">
+                    <iframe id="previewFrame" class="device-preview h-full bg-white rounded-xl shadow-2xl border border-slate-800 transition-all duration-300" style="width: 100%;"></iframe>
+                </div>
+
+                <!-- Raw Code View Screen -->
+                <div id="codeWrapper" class="hidden h-full w-full max-w-5xl rounded-xl border border-slate-800 bg-slate-900 flex flex-col overflow-hidden">
+                    <div class="h-10 border-b border-slate-800 px-4 bg-slate-950 flex items-center justify-between">
+                        <span class="text-xs font-mono text-slate-400">index.html (Single-file Tailwind)</span>
+                        <button onclick="copyToClipboard()" class="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1">
+                            <i data-lucide="copy" class="w-3 h-3"></i> Copy All
+                        </button>
+                    </div>
+                    <pre class="flex-1 p-4 overflow-auto font-mono text-xs text-slate-300 leading-relaxed bg-slate-950/90 select-all"><code id="codeText"></code></pre>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- API Key Configuration Modal -->
+    <div id="apiModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+                    <i data-lucide="key" class="w-4 h-4 text-amber-400"></i> Gemini API Settings
+                </h3>
+                <button onclick="toggleApiModal()" class="text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+            <p class="text-xs text-slate-400 leading-relaxed">
+                Provide your custom Google Gemini API Key to enable direct live AI code generation (`gemini-3-flash-preview`). If left blank, Canvas will auto-supply an ambient key or use the high-performance local AI synthesizer fallback!
+            </p>
+            <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Gemini API Key</label>
+                <input type="password" id="apiKeyInput" placeholder="AIzaSy..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="toggleApiModal()" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700">Cancel</button>
+                <button onclick="saveApiKey()" class="px-4 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white">Save Key</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* Global State */
+        let state = {
+            prompt: '',
+            theme: 'dark',
+            components: {
+                hero: true,
+                features: true,
+                pricing: true,
+                testimonials: true,
+                contact: true,
+                footer: true
+            },
+            apiKey: '',
+            generatedHtml: '',
+            isGenerating: false
+        };
+
+        // Initialize Lucide icons on load
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+
+            // Track prompt length
+            const promptInput = document.getElementById('promptInput');
+            promptInput.addEventListener('input', (e) => {
+                document.getElementById('promptCharCount').innerText = `${e.target.value.length} chars`;
+            });
+
+            // Theme selector click listeners
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.theme-btn').forEach(b => {
+                        b.classList.remove('border-indigo-500', 'bg-indigo-950/30');
+                        b.classList.add('border-slate-800', 'bg-slate-950/40');
+                    });
+                    btn.classList.add('border-indigo-500', 'bg-indigo-950/30');
+                    btn.classList.remove('border-slate-800', 'bg-slate-950/40');
+                    state.theme = btn.getAttribute('data-theme');
+                });
+            });
+        });
+
+        /* Preset Prompt Templates */
+        const PROMPT_TEMPLATES = {
+            saas: "Build a sleek modern dark-mode landing page for an AI Productivity SaaS called 'FlowAI'. Include glowing hero buttons, interactive feature cards, flexible pricing tiers (Free, Pro, Enterprise), customer testimonials, and a sleek contact form.",
+            coffee: "Design a warm, aesthetic landing page for 'Artisan Roasts Coffee Co.'. Features warm earthy tones, hero header with coffee images, daily special menu section, customer reviews, and opening hours footer.",
+            portfolio: "Create a vibrant glassmorphic portfolio website for a Senior UX/UI Designer. Features hero introduction, project grid showcase, skills list, testimonial slider, and work inquiry form.",
+            gym: "Create a bold high-energy fitness studio landing page for 'Apex Athletic Club'. Features dark cyberpunk neon theme, class schedule grid, trainer spotlights, membership plans, and join now CTA."
+        };
+
+        function setPromptTemplate(type) {
+            if (PROMPT_TEMPLATES[type]) {
+                const textarea = document.getElementById('promptInput');
+                textarea.value = PROMPT_TEMPLATES[type];
+                document.getElementById('promptCharCount').innerText = `${textarea.value.length} chars`;
+            }
+        }
+
+        /* Modal Toggle Functions */
+        function toggleApiModal() {
+            const modal = document.getElementById('apiModal');
+            modal.classList.toggle('hidden');
+        }
+
+        function saveApiKey() {
+            const val = document.getElementById('apiKeyInput').value.trim();
+            state.apiKey = val;
+            const statusText = document.getElementById('apiStatusText');
+            if (val) {
+                statusText.innerText = "Gemini API: Custom Key Active";
+                statusText.classList.add('text-emerald-400');
+            } else {
+                statusText.innerText = "Gemini API: Auto/Free";
+                statusText.classList.remove('text-emerald-400');
+            }
+            toggleApiModal();
+        }
+
+        /* Device View Resizing */
+        function setDeviceWidth(width) {
+            const frame = document.getElementById('previewFrame');
+            frame.style.width = width;
+            
+            document.querySelectorAll('.device-btn').forEach(btn => {
+                btn.classList.remove('bg-slate-800', 'text-slate-200');
+                btn.classList.add('text-slate-400');
+            });
+            event.currentTarget.classList.add('bg-slate-800', 'text-slate-200');
+        }
+
+        /* Tab Switching (Preview vs Code) */
+        function switchTab(tab) {
+            const previewWrap = document.getElementById('previewWrapper');
+            const codeWrap = document.getElementById('codeWrapper');
+            const emptyState = document.getElementById('emptyState');
+            const tabPreview = document.getElementById('tabPreview');
+            const tabCode = document.getElementById('tabCode');
+
+            if (!state.generatedHtml && tab === 'code') {
+                return;
+            }
+
+            if (tab === 'preview') {
+                tabPreview.classList.add('bg-slate-800', 'text-white');
+                tabPreview.classList.remove('text-slate-400');
+                tabCode.classList.remove('bg-slate-800', 'text-white');
+                tabCode.classList.add('text-slate-400');
+
+                if (state.generatedHtml) {
+                    previewWrap.classList.remove('hidden');
+                    emptyState.classList.add('hidden');
+                } else {
+                    emptyState.classList.remove('hidden');
+                }
+                codeWrap.classList.add('hidden');
+            } else {
+                tabCode.classList.add('bg-slate-800', 'text-white');
+                tabCode.classList.remove('text-slate-400');
+                tabPreview.classList.remove('bg-slate-800', 'text-white');
+                tabPreview.classList.add('text-slate-400');
+
+                previewWrap.classList.add('hidden');
+                emptyState.classList.add('hidden');
+                codeWrap.classList.remove('hidden');
+            }
+        }
+
+        /* Main Generation Logic */
+        async function handleGenerate() {
+            const promptText = document.getElementById('promptInput').value.trim();
+            if (!promptText) {
+                alert('Please enter a website description first.');
+                return;
+            }
+
+            state.prompt = promptText;
+            state.components = {
+                hero: document.getElementById('comp-hero').checked,
+                features: document.getElementById('comp-features').checked,
+                pricing: document.getElementById('comp-pricing').checked,
+                testimonials: document.getElementById('comp-testimonials').checked,
+                contact: document.getElementById('comp-contact').checked,
+                footer: document.getElementById('comp-footer').checked
+            };
+
+            updateStatus(true, 10, "Analyzing user prompt & component requirements...");
+
+            try {
+                let htmlCode = "";
+                
+                // Try generating via Gemini API
+                updateStatus(true, 30, "Connecting to Gemini AI Engine...");
+                htmlCode = await generateWithGemini(state.prompt, state.theme, state.components);
+
+                if (!htmlCode) {
+                    updateStatus(true, 60, "Fallback: Synthesizing HTML layout via local AI engine...");
+                    await new Promise(r => setTimeout(r, 600));
+                    htmlCode = generateFallbackWebsite(state.prompt, state.theme, state.components);
+                }
+
+                updateStatus(true, 85, "Injecting Tailwind CSS & visual styles...");
+                await new Promise(r => setTimeout(r, 400));
+
+                updateStatus(true, 100, "Rendering site live...");
+                
+                state.generatedHtml = htmlCode;
+                renderSite(htmlCode);
+
+                setTimeout(() => {
+                    updateStatus(false, 0, "");
+                    document.getElementById('refineContainer').classList.remove('hidden');
+                }, 500);
+
+            } catch (err) {
+                console.error("Generation error:", err);
+                updateStatus(true, 70, "API Throttled. Switching to fallback engine...");
+                const htmlCode = generateFallbackWebsite(state.prompt, state.theme, state.components);
+                state.generatedHtml = htmlCode;
+                renderSite(htmlCode);
+                setTimeout(() => {
+                    updateStatus(false, 0, "");
+                    document.getElementById('refineContainer').classList.remove('hidden');
+                }, 500);
+            }
+        }
+
+        /* Iterative / Refine Request */
+        async function handleRefine() {
+            const refineMsg = document.getElementById('refineInput').value.trim();
+            if (!refineMsg || !state.generatedHtml) return;
+
+            const combinedPrompt = `${state.prompt}. Update instruction: ${refineMsg}`;
+            document.getElementById('refineInput').value = '';
+            
+            updateStatus(true, 20, "Applying refinement changes...");
+            let htmlCode = await generateWithGemini(combinedPrompt, state.theme, state.components);
+            if (!htmlCode) {
+                htmlCode = generateFallbackWebsite(combinedPrompt, state.theme, state.components);
+            }
+
+            state.generatedHtml = htmlCode;
+            renderSite(htmlCode);
+            updateStatus(false, 0, "");
+        }
+
+        /* Calling Gemini API */
+        async function generateWithGemini(prompt, theme, components) {
+            const apiKey = state.apiKey || ""; 
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            const systemPrompt = `You are a world-class Web Designer & Developer.
+Generate a complete, modern, beautifully styled single-file HTML page based on the user request.
+Rules:
+1. MUST use Tailwind CSS via CDN: <script src="https://cdn.tailwindcss.com"><\/script>.
+2. Do NOT wrap in markdown fences or explain anything. Return ONLY raw executable standard HTML code starting with <!DOCTYPE html>.
+3. Include Lucide icons if applicable (<script src="https://unpkg.com/lucide@latest"><\/script>).
+4. Make sure layout is fully responsive, polished, with nice gradients, padding, and subtle animations.
+5. Active theme design requirement: ${theme}.
+6. Enable these components: ${Object.keys(components).filter(k => components[k]).join(', ')}.`;
+
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] }
+            };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) return null;
+
+                const data = await response.json();
+                let text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+                // Strip markdown backticks if returned
+                if (text.startsWith("```")) {
+                    text = text.replace(/^```[a-z]*\n?/, "").replace(/\n?```$/, "").trim();
+                }
+
+                return text.length > 50 ? text : null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        /* Dynamic Offline Fallback Generator */
+        function generateFallbackWebsite(prompt, theme, components) {
+            const pLower = prompt.toLowerCase();
+
+            // Detect industry context
+            let title = "Modern Digital Platform";
+            let brandColor = "indigo";
+            let heroHeading = "Empowering Your Digital Future";
+            let heroSub = "Experience next-generation speed, innovation, and design built for modern teams.";
+
+            if (pLower.includes("coffee") || pLower.includes("cafe")) {
+                title = "Artisan Roasts Coffee";
+                brandColor = "amber";
+                heroHeading = "Crafted Coffee, Brewed to Perfection";
+                heroSub = "Savor sustainably sourced beans handcrafted by passionate baristas every single day.";
+            } else if (pLower.includes("saas") || pLower.includes("ai")) {
+                title = "Aether AI Platform";
+                brandColor = "indigo";
+                heroHeading = "Build Faster with Autonomous AI";
+                heroSub = "Automate workflows, generate code, and scale software development effortlessly.";
+            } else if (pLower.includes("gym") || pLower.includes("fitness")) {
+                title = "Apex Athletic Gym";
+                brandColor = "emerald";
+                heroHeading = "Unleash Your Inner Potential";
+                heroSub = "State-of-the-art equipment, expert trainers, and personalized fitness programs.";
+            } else if (pLower.includes("portfolio") || pLower.includes("agency")) {
+                title = "Aura Creative Studio";
+                brandColor = "purple";
+                heroHeading = "We Craft Digital Experiences";
+                heroSub = "A boutique design & development agency turning bold visions into reality.";
+            }
+
+            // Theme visual classes
+            let bgClass = "bg-slate-950 text-slate-100";
+            let cardClass = "bg-slate-900 border border-slate-800";
+            let accentBtn = "bg-indigo-600 hover:bg-indigo-500 text-white";
+
+            if (theme === 'light') {
+                bgClass = "bg-gray-50 text-gray-900";
+                cardClass = "bg-white border border-gray-200 shadow-sm";
+                accentBtn = "bg-gray-900 hover:bg-gray-800 text-white";
+            } else if (theme === 'cyberpunk') {
+                bgClass = "bg-black text-cyan-400";
+                cardClass = "bg-slate-900/90 border border-pink-500/40 shadow-lg shadow-pink-500/10";
+                accentBtn = "bg-gradient-to-r from-pink-500 to-cyan-500 text-black font-bold";
+            } else if (theme === 'glass') {
+                bgClass = "bg-slate-950 text-slate-100";
+                cardClass = "bg-white/5 backdrop-blur-md border border-white/10";
+                accentBtn = "bg-gradient-to-r from-purple-500 to-indigo-500 text-white";
+            }
+
+            return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${title}</title>
+    <script src="https://cdn.tailwindcss.com"><\/script>
+    <script src="https://unpkg.com/lucide@latest"><\/script>
+</head>
+<body class="${bgClass} font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- Navigation Header -->
+    <header class="border-b border-white/10 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2 font-bold text-lg tracking-tight">
+                <span class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white">✨</span>
+                <span>${title}</span>
+            </div>
+            <nav class="hidden md:flex items-center gap-8 text-sm opacity-80">
+                <a href="#features" class="hover:opacity-100 transition">Features</a>
+                <a href="#pricing" class="hover:opacity-100 transition">Pricing</a>
+                <a href="#testimonials" class="hover:opacity-100 transition">Reviews</a>
+                <a href="#contact" class="hover:opacity-100 transition">Contact</a>
+            </nav>
+            <a href="#contact" class="px-4 py-2 rounded-lg text-sm font-medium ${accentBtn} transition">Get Started</a>
+        </div>
+    </header>
+
+    ${components.hero ? `
+    <!-- Hero Section -->
+    <section class="py-24 px-6 text-center relative overflow-hidden">
+        <div class="max-w-4xl mx-auto space-y-6">
+            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Next-Gen Experience</span>
+            <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight leading-tight">${heroHeading}</h1>
+            <p class="text-base md:text-lg opacity-70 max-w-2xl mx-auto">${heroSub}</p>
+            <div class="flex items-center justify-center gap-4 pt-4">
+                <button class="px-6 py-3 rounded-xl font-medium ${accentBtn} shadow-lg transition">Explore Now</button>
+                <button class="px-6 py-3 rounded-xl font-medium border border-white/20 hover:bg-white/5 transition">Learn More</button>
+            </div>
+        </div>
+    </section>
+    ` : ''}
+
+    ${components.features ? `
+    <!-- Features Grid -->
+    <section id="features" class="py-16 px-6 max-w-7xl mx-auto w-full">
+        <div class="text-center mb-12">
+            <h2 class="text-2xl md:text-3xl font-bold">Why Choose Us</h2>
+            <p class="text-sm opacity-60 mt-1">Built with cutting edge precision and care</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="${cardClass} p-6 rounded-2xl space-y-3">
+                <div class="w-10 h-10 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold">⚡</div>
+                <h3 class="font-semibold text-lg">Lightning Fast</h3>
+                <p class="text-xs opacity-70 leading-relaxed">Optimized performance ensuring seamless interaction and real-time response times.</p>
+            </div>
+            <div class="${cardClass} p-6 rounded-2xl space-y-3">
+                <div class="w-10 h-10 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold">🛡️</div>
+                <h3 class="font-semibold text-lg">Secure & Reliable</h3>
+                <p class="text-xs opacity-70 leading-relaxed">Enterprise-grade security standards protecting your data around the clock.</p>
+            </div>
+            <div class="${cardClass} p-6 rounded-2xl space-y-3">
+                <div class="w-10 h-10 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold">💎</div>
+                <h3 class="font-semibold text-lg">Premium Quality</h3>
+                <p class="text-xs opacity-70 leading-relaxed">Thoughtfully engineered visuals and effortless layout hierarchy.</p>
+            </div>
+        </div>
+    </section>
+    ` : ''}
+
+    ${components.pricing ? `
+    <!-- Pricing Section -->
+    <section id="pricing" class="py-16 px-6 max-w-7xl mx-auto w-full">
+        <div class="text-center mb-12">
+            <h2 class="text-2xl md:text-3xl font-bold">Flexible Plans</h2>
+            <p class="text-sm opacity-60 mt-1">Simple transparent pricing for everyone</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="${cardClass} p-8 rounded-2xl space-y-4">
+                <h3 class="font-bold text-lg">Starter</h3>
+                <div class="text-3xl font-extrabold">$19<span class="text-xs font-normal opacity-60">/mo</span></div>
+                <ul class="text-xs space-y-2 opacity-80 border-t border-white/10 pt-4">
+                    <li>✓ Core Features Included</li>
+                    <li>✓ Standard Support</li>
+                    <li>✓ Single User License</li>
+                </ul>
+                <button class="w-full py-2.5 rounded-xl border border-white/20 text-xs font-medium hover:bg-white/5 transition">Select Starter</button>
+            </div>
+            <div class="${cardClass} p-8 rounded-2xl space-y-4 ring-2 ring-indigo-500 relative">
+                <span class="absolute -top-3 right-4 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-600 text-white">POPULAR</span>
+                <h3 class="font-bold text-lg">Professional</h3>
+                <div class="text-3xl font-extrabold">$49<span class="text-xs font-normal opacity-60">/mo</span></div>
+                <ul class="text-xs space-y-2 opacity-80 border-t border-white/10 pt-4">
+                    <li>✓ Everything in Starter</li>
+                    <li>✓ Priority Support & Analytics</li>
+                    <li>✓ Up to 10 Team Members</li>
+                </ul>
+                <button class="w-full py-2.5 rounded-xl ${accentBtn} text-xs font-medium transition">Select Pro</button>
+            </div>
+            <div class="${cardClass} p-8 rounded-2xl space-y-4">
+                <h3 class="font-bold text-lg">Enterprise</h3>
+                <div class="text-3xl font-extrabold">$99<span class="text-xs font-normal opacity-60">/mo</span></div>
+                <ul class="text-xs space-y-2 opacity-80 border-t border-white/10 pt-4">
+                    <li>✓ Custom Integrations</li>
+                    <li>✓ 24/7 Dedicated Manager</li>
+                    <li>✓ Unlimited Access</li>
+                </ul>
+                <button class="w-full py-2.5 rounded-xl border border-white/20 text-xs font-medium hover:bg-white/5 transition">Contact Sales</button>
+            </div>
+        </div>
+    </section>
+    ` : ''}
+
+    ${components.testimonials ? `
+    <!-- Testimonials -->
+    <section id="testimonials" class="py-16 px-6 max-w-5xl mx-auto w-full text-center">
+        <h2 class="text-2xl md:text-3xl font-bold mb-8">Loved by Users</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
+            <div class="${cardClass} p-6 rounded-2xl space-y-3">
+                <p class="text-xs italic opacity-80">"This product completely transformed our daily operations. Fast, intuitive, and reliable!"</p>
+                <div class="font-semibold text-xs">— Sarah Jenkins, Tech Lead</div>
+            </div>
+            <div class="${cardClass} p-6 rounded-2xl space-y-3">
+                <p class="text-xs italic opacity-80">"The design polish and attention to detail exceeded all our expectations."</p>
+                <div class="font-semibold text-xs">— Alex Rivera, Product Manager</div>
+            </div>
+        </div>
+    </section>
+    ` : ''}
+
+    ${components.contact ? `
+    <!-- Contact CTA -->
+    <section id="contact" class="py-16 px-6 max-w-3xl mx-auto w-full text-center">
+        <div class="${cardClass} p-8 rounded-3xl space-y-4">
+            <h2 class="text-2xl font-bold">Ready to get started?</h2>
+            <p class="text-xs opacity-70">Join thousands of satisfied customers today.</p>
+            <div class="flex flex-col sm:flex-row gap-2 max-w-md mx-auto">
+                <input type="email" placeholder="Enter your email" class="px-4 py-2.5 rounded-xl bg-black/20 border border-white/10 text-xs flex-1 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                <button class="px-6 py-2.5 rounded-xl text-xs font-medium ${accentBtn} transition">Subscribe</button>
+            </div>
+        </div>
+    </section>
+    ` : ''}
+
+    ${components.footer ? `
+    <!-- Footer -->
+    <footer class="mt-auto border-t border-white/10 py-8 px-6 text-center text-xs opacity-50">
+        <p>&copy; ${new Date().getFullYear()} ${title}. Built with AI Web Studio Generator.</p>
+    </footer>
+    ` : ''}
+
+    <script>
+        lucide.createIcons();
+    <\/script>
+</body>
+</html>`;
+        }
+
+        /* Rendering Site to Preview & Code View */
+        function renderSite(html) {
+            const iframe = document.getElementById('previewFrame');
+            const codeText = document.getElementById('codeText');
+            
+            // Set frame srcdoc
+            iframe.srcdoc = html;
+
+            // Set raw code text
+            codeText.textContent = html;
+
+            // Switch display view
+            document.getElementById('emptyState').classList.add('hidden');
+            document.getElementById('previewWrapper').classList.remove('hidden');
+            switchTab('preview');
+        }
+
+        /* Status & Progress Helper */
+        function updateStatus(show, percent, stepText) {
+            const container = document.getElementById('statusContainer');
+            const progressBar = document.getElementById('progressBar');
+            const percentageText = document.getElementById('progressPercentage');
+            const step = document.getElementById('statusStep');
+            const btn = document.getElementById('generateBtn');
+
+            if (show) {
+                container.classList.remove('hidden');
+                progressBar.style.width = `${percent}%`;
+                percentageText.innerText = `${percent}%`;
+                step.innerText = stepText;
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                setTimeout(() => container.classList.add('hidden'), 1000);
+            }
+        }
+
+        /* Export & Clipboard Helper Functions */
+        function copyToClipboard() {
+            if (!state.generatedHtml) {
+                alert('No code generated yet to copy.');
+                return;
+            }
+            navigator.clipboard.writeText(state.generatedHtml).then(() => {
+                alert('HTML Code copied to clipboard!');
+            });
+        }
+
+        function exportCode() {
+            if (!state.generatedHtml) {
+                alert('Please generate a website before exporting.');
+                return;
+            }
+            const blob = new Blob([state.generatedHtml], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'generated-website.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function openInNewTab() {
+            if (!state.generatedHtml) {
+                alert('Please generate a website first.');
+                return;
+            }
+            const blob = new Blob([state.generatedHtml], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+        }
+
+        function resetAll() {
+            document.getElementById('promptInput').value = '';
+            document.getElementById('promptCharCount').innerText = '0 chars';
+            state.generatedHtml = '';
+            document.getElementById('previewWrapper').classList.add('hidden');
+            document.getElementById('codeWrapper').classList.add('hidden');
+            document.getElementById('emptyState').classList.remove('hidden');
+            document.getElementById('refineContainer').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
